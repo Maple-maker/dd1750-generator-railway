@@ -25,11 +25,10 @@ COPY . .
 RUN mkdir -p templates static
 
 # Set environment variables
-ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
 
 # Railway uses PORT environment variable
-ENV PORT=8000
+CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 app:app
 
 # Expose port (Railway will override this)
 EXPOSE 8000
