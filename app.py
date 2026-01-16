@@ -9,7 +9,7 @@ import json
 from flask import Flask, render_template, request, send_file, jsonify, session
 from werkzeug.utils import secure_filename
 from dd1750_ocr import extract_items_with_ocr, generate_review_report, ExtractedItem
-from dd1750_core_improved import generate_dd1750_from_pdf, detect_bom_format
+from dd1750_core import generate_dd1750_from_verified_items, detect_bom_format
 from dataclasses import asdict
 
 app = Flask(__name__)
