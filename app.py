@@ -39,17 +39,25 @@ def health():
 def upload():
     """Handle PDF upload and extract items for preview"""
     try:
+        print("=== UPLOAD REQUEST RECEIVED ===")
+        
         # Check files
         if 'bom_file' not in request.files or 'template_file' not in request.files:
+            print("ERROR: Missing files in request")
             return jsonify({'error': 'Missing required files'}), 400
         
         bom_file = request.files['bom_file']
         template_file = request.files['template_file']
         
+        print(f"BOM file: {bom_file.filename}")
+        print(f"Template file: {template_file.filename}")
+        
         if bom_file.filename == '' or template_file.filename == '':
+            print("ERROR: Empty filename")
             return jsonify({'error': 'No files selected'}), 400
         
         if not (allowed_file(bom_file.filename) and allowed_file(template_file.filename)):
+            print("ERROR: Invalid file type")
             return jsonify({'error': 'Only PDF files allowed'}), 400
         
         # Save files temporarily
@@ -60,43 +68,56 @@ def upload():
             bom_file.save(bom_path)
             template_file.save(template_path)
             
+            print(f"Files saved to: {tmpdir}")
+            
             # Store template in session for later use
             with open(template_path, 'rb') as f:
                 template_b64 = base64.b64encode(f.read()).decode('utf-8')
                 session['template_b64'] = template_b64
             
+            print("Template stored in session")
+            
             # Get start page
             start_page = int(request.form.get('start_page', 0))
+            print(f"Start page: {start_page}")
             
             # Detect format
+            print("Detecting BOM format...")
             bom_format = detect_bom_format(bom_path)
             print(f"Detected BOM format: {bom_format}")
             
             # Extract items using OCR
-            print("Using OCR extraction...")
+            print("Starting OCR extraction...")
             items = extract_items_with_ocr(bom_path, start_page)
+            print(f"Extracted {len(items)} items")
             
             # Store items in session
-            session['items'] = [asdict(item) for item in items]
+            items_list = [asdict(item) for item in items]
+            session['items'] = items_list
+            print(f"Items stored in session: {len(items_list)}")
             
             # Generate review report
             report = generate_review_report(items)
             
             # Return items for preview
-            return jsonify({
+            response_data = {
                 'success': True,
                 'format': bom_format,
                 'total_items': len(items),
-                'items': [asdict(item) for item in items],
+                'items': items_list,
                 'report': report,
                 'needs_review': all(item.needs_review for item in items)
-            })
+            }
+            
+            print(f"Returning response with {len(items_list)} items")
+            return jsonify(response_data)
     
     except Exception as e:
-        print(f"Error during upload: {e}")
+        print(f"=== ERROR during upload ===")
+        print(f"Error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 
 @app.route('/update_items', methods=['POST'])
