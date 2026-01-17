@@ -204,6 +204,15 @@ def extract_table_from_text(text: str, confidence_map: Dict[str, int]) -> List[D
         if not description:
             continue
         
+        # Clean up description - remove leading "B " from LV column
+        description = re.sub(r'^B\s+', '', description)
+        description = re.sub(r'^A\s+', '', description)
+        
+        # Skip admin/header items (descriptions that are clearly not items)
+        skip_keywords = ['COMPONENT LISTING', 'HAND RECEIPT', 'BASIC ISSUE', 'END ITEM', 'BTY', 'ADA BATTE']
+        if any(keyword in description.upper() for keyword in skip_keywords):
+            continue
+        
         # Look for quantity - usually at end of line or next line
         # Look for "Auth Qty" column or just numbers
         qty = 1  # Default
